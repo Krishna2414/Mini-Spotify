@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="h3">Delete your account?</h1>
+<p>This permanently removes your profile, uploads and playlists.</p>
+<form method="post">{% csrf_token %}
+  <button class="btn btn-danger" type="submit">Yes, delete</button>
+  <a class="btn btn-outline-light" href="{% url 'profile_detail' user.username %}">Cancel</a>
+</form>
+{% endblock %}

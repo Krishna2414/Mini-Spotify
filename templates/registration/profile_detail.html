@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ profile_user.username }} | Mini Spotify{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  {% if profile_user.profile.avatar %}
+    <img src="{{ profile_user.profile.avatar.url }}" alt="{{ profile_user.username }}'s avatar" class="avatar">
+  {% else %}
+    <div class="avatar avatar-placeholder" aria-hidden="true"><i class="bi bi-person"></i></div>
+  {% endif %}
+  <div>
+    <h1 class="h3 mb-1">{{ profile_user.username }}
+      {% if profile_user.profile.is_premium %}<span class="badge bg-warning text-dark">Premium</span>{% endif %}
+    </h1>
+    <p class="text-secondary mb-0">{{ profile_user.profile.bio|default:"No bio yet." }}</p>
+  </div>
+</div>
+{% if user == profile_user %}
+  <a class="btn btn-outline-light btn-sm" href="{% url 'profile_edit' %}">Edit profile</a>
+  <a class="btn btn-outline-danger btn-sm" href="{% url 'account_delete' %}">Delete account</a>
+{% endif %}
+
+{# Dev 2 adds the "Uploads" section here once the tracks app is merged #}
+{% endblock %}
