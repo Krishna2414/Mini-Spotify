@@ -5,6 +5,8 @@ from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils.dateformat import format as date_format
+from django.utils.timezone import localtime
 
 from .models import Track
 
@@ -146,3 +148,38 @@ class TrackEditTests(TestCase):
         self.assertEqual(self.track.title, "Sunrise Walk")
         self.assertRedirects(response, self.track.get_absolute_url())
         self.assertContains(response, "Track updated.")
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class TrackDetailTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("sam", password="pass12345!")
+        self.track = Track.objects.create(
+            title="Night Drive", artist="Synth Co", genre="electronic",
+            audio=fake_mp3(), uploaded_by=self.user,
+        )
+
+    def test_page_shows_track_details(self):
+        response = self.client.get(self.track.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Night Drive")
+        self.assertContains(response, "Synth Co")
+        self.assertContains(response, "Electronic")  # genre display name
+        self.assertContains(response, date_format(localtime(self.track.created_at), "j M Y"))
+        self.assertContains(response, "track-cover-placeholder")  # no cover uploaded
+
+    def test_play_button_has_player_data(self):
+        response = self.client.get(self.track.get_absolute_url())
+        self.assertContains(response, "btn-lg play-btn")
+        self.assertContains(response, f'data-src="{self.track.audio.url}"')
+        self.assertContains(response, 'data-title="Night Drive"')
+
+    def test_uploader_links_to_profile(self):
+        response = self.client.get(self.track.get_absolute_url())
+        self.assertContains(response, f'href="{reverse("profile_detail", args=["sam"])}"')
+
+    def test_visitors_can_view_without_logging_in(self):
+        self.assertEqual(self.client.get(self.track.get_absolute_url()).status_code, 200)
+
+    def test_missing_track_returns_404(self):
+        self.assertEqual(self.client.get(reverse("track_detail", args=[999])).status_code, 404)
