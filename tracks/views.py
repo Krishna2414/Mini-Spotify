@@ -2,8 +2,6 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from .forms import TrackForm
 from .models import Track
@@ -44,4 +42,13 @@ class TrackUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         messages.success(self.request, "Track updated.")
+        return super().form_valid(form)
+
+
+class TrackDeleteView(LoginRequiredMixin, OwnerRequiredMixin, DeleteView):
+    model = Track
+    success_url = reverse_lazy("track_list")
+
+    def form_valid(self, form):
+        messages.success(self.request, f'"{self.object.title}" was deleted.')
         return super().form_valid(form)

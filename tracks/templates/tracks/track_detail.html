@@ -23,6 +23,7 @@
     {% if user == track.uploaded_by %}
       <div class="mt-4">
         <a class="btn btn-outline-light btn-sm" href="{% url 'track_update' track.pk %}"><i class="bi bi-pencil" aria-hidden="true"></i> Edit</a>
+                <a class="btn btn-outline-danger btn-sm" href="{% url 'track_delete' track.pk %}"><i class="bi bi-trash" aria-hidden="true"></i> Delete</a>
       </div>
     {% endif %}
   </div>

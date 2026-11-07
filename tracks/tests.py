@@ -183,3 +183,47 @@ class TrackDetailTests(TestCase):
 
     def test_missing_track_returns_404(self):
         self.assertEqual(self.client.get(reverse("track_detail", args=[999])).status_code, 404)
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class TrackDeleteTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user("owner", password="pass12345!")
+        self.other = User.objects.create_user("other", password="pass12345!")
+        self.track = Track.objects.create(
+            title="Blue Hour", artist="Jazz Trio", genre="jazz",
+            audio=fake_mp3(), uploaded_by=self.owner,
+        )
+        self.delete_url = reverse("track_delete", args=[self.track.pk])
+
+    def test_get_shows_confirmation_and_deletes_nothing(self):
+        self.client.login(username="owner", password="pass12345!")
+        response = self.client.get(self.delete_url)
+        self.assertContains(response, 'Delete "Blue Hour"?')
+        self.assertTrue(Track.objects.filter(pk=self.track.pk).exists())
+
+    def test_delete_button_only_shown_to_owner(self):
+        self.client.login(username="owner", password="pass12345!")
+        self.assertContains(self.client.get(self.track.get_absolute_url()), self.delete_url)
+        self.client.login(username="other", password="pass12345!")
+        self.assertNotContains(self.client.get(self.track.get_absolute_url()), self.delete_url)
+
+    def test_non_owner_cannot_delete(self):
+        self.client.login(username="other", password="pass12345!")
+        self.assertEqual(self.client.get(self.delete_url).status_code, 403)
+        self.assertEqual(self.client.post(self.delete_url).status_code, 403)
+        self.assertTrue(Track.objects.filter(pk=self.track.pk).exists())
+
+    def test_owner_can_delete(self):
+        self.client.login(username="owner", password="pass12345!")
+        response = self.client.post(self.delete_url, follow=True)
+        self.assertRedirects(response, reverse("track_list"))
+        self.assertContains(response, "was deleted")
+        self.assertFalse(Track.objects.filter(pk=self.track.pk).exists())
+
+    def test_audio_file_removed_from_storage(self):
+        storage, name = self.track.audio.storage, self.track.audio.name
+        self.assertTrue(storage.exists(name))
+        self.client.login(username="owner", password="pass12345!")
+        self.client.post(self.delete_url)
+        self.assertFalse(storage.exists(name))
