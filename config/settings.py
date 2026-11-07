@@ -15,7 +15,11 @@ DEBUG = os.environ.get("DEBUG", "False") == "True"
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", ".herokuapp.com"]
 CSRF_TRUSTED_ORIGINS = ["https://*.herokuapp.com"]
 
-USE_CLOUDINARY = bool(os.environ.get("CLOUDINARY_URL"))
+USE_CLOUDINARY = os.environ.get("USE_CLOUDINARY")
+if USE_CLOUDINARY is not None:
+    USE_CLOUDINARY = USE_CLOUDINARY.strip().lower() in {"1", "true", "yes", "on"}
+else:
+    USE_CLOUDINARY = bool(os.environ.get("CLOUDINARY_URL")) and not DEBUG
 
 INSTALLED_APPS = [
     "django.contrib.admin",
