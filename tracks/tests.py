@@ -105,3 +105,44 @@ class TrackLibraryTests(TestCase):
         self.assertEqual(len(response.context["tracks"]), 12)
         page2 = self.client.get(reverse("track_list") + "?page=2")
         self.assertEqual(len(page2.context["tracks"]), 1)
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class TrackEditTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user("owner", password="pass12345!")
+        self.other = User.objects.create_user("other", password="pass12345!")
+        self.track = Track.objects.create(
+            title="Sunrse Walk", artist="Lo-fi Lab", genre="lofi",
+            audio=fake_mp3(), uploaded_by=self.owner,
+        )
+        self.edit_url = reverse("track_update", args=[self.track.pk])
+
+    def test_edit_button_only_shown_to_owner(self):
+        self.client.login(username="owner", password="pass12345!")
+        self.assertContains(self.client.get(self.track.get_absolute_url()), self.edit_url)
+        self.client.login(username="other", password="pass12345!")
+        self.assertNotContains(self.client.get(self.track.get_absolute_url()), self.edit_url)
+
+    def test_non_owner_gets_403(self):
+        self.client.login(username="other", password="pass12345!")
+        self.assertEqual(self.client.get(self.edit_url).status_code, 403)
+        response = self.client.post(self.edit_url, {"title": "Hacked", "artist": "X", "genre": "other"})
+        self.assertEqual(response.status_code, 403)
+        self.track.refresh_from_db()
+        self.assertEqual(self.track.title, "Sunrse Walk")
+
+    def test_logged_out_user_sent_to_login(self):
+        response = self.client.get(self.edit_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("login"), response.url)
+
+    def test_owner_can_edit_and_sees_success_message(self):
+        self.client.login(username="owner", password="pass12345!")
+        response = self.client.post(self.edit_url, {
+            "title": "Sunrise Walk", "artist": "Lo-fi Lab", "genre": "lofi",
+        }, follow=True)
+        self.track.refresh_from_db()
+        self.assertEqual(self.track.title, "Sunrise Walk")
+        self.assertRedirects(response, self.track.get_absolute_url())
+        self.assertContains(response, "Track updated.")

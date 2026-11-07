@@ -6,4 +6,5 @@ urlpatterns = [
     path("", views.TrackListView.as_view(), name="track_list"),
     path("upload/", views.TrackCreateView.as_view(), name="track_create"),
     path("<int:pk>/", views.TrackDetailView.as_view(), name="track_detail"),
+    path("<int:pk>/edit/", views.TrackUpdateView.as_view(), name="track_update"),
 ]
