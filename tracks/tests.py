@@ -227,3 +227,26 @@ class TrackDeleteTests(TestCase):
         self.client.login(username="owner", password="pass12345!")
         self.client.post(self.delete_url)
         self.assertFalse(storage.exists(name))
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class ProfileUploadsTests(TestCase):
+    def setUp(self):
+        self.sam = User.objects.create_user("sam", password="pass12345!")
+        self.alex = User.objects.create_user("alex", password="pass12345!")
+
+    def test_profile_lists_users_uploads_as_cards(self):
+        Track.objects.create(title="Ocean Glow", artist="Calm Waves",
+                             audio=fake_mp3(), uploaded_by=self.sam)
+        Track.objects.create(title="Someone Else's Song", artist="X",
+                             audio=fake_mp3(), uploaded_by=self.alex)
+        response = self.client.get(reverse("profile_detail", args=["sam"]))
+        self.assertContains(response, "Ocean Glow")
+        self.assertContains(response, "data-track-card")
+        self.assertContains(response, "play-btn")
+        self.assertNotContains(response, "Someone Else&#x27;s Song")
+        self.assertNotContains(response, "No uploads yet.")
+
+    def test_user_with_no_uploads_shows_message(self):
+        response = self.client.get(reverse("profile_detail", args=["alex"]))
+        self.assertContains(response, "No uploads yet.")

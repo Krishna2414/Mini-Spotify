@@ -19,5 +19,14 @@
   <a class="btn btn-outline-danger btn-sm" href="{% url 'account_delete' %}">Delete account</a>
 {% endif %}
 
-{# Dev 2 adds the "Uploads" section here once the tracks app is merged #}
+<section class="mt-4" aria-labelledby="uploads-heading">
+  <h2 id="uploads-heading" class="h5">Uploads <span class="badge bg-secondary">{{ profile_user.tracks.count }}</span></h2>
+  <div class="row g-3">
+    {% for track in profile_user.tracks.all %}
+      {% include "tracks/_track_card.html" %}
+    {% empty %}
+      <p class="text-secondary">No uploads yet.</p>
+    {% endfor %}
+  </div>
+</section>
 {% endblock %}
