@@ -1,10 +1,14 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import CreateView, DetailView
+from django.views.generic import CreateView, DetailView, ListView
 
 from .forms import TrackForm
 from .models import Track
 
+class TrackListView(ListView):
+    model = Track
+    paginate_by = 12
+    context_object_name = "tracks"
 
 class TrackDetailView(DetailView):
     model = Track

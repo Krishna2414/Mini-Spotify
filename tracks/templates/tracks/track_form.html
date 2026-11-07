@@ -9,7 +9,7 @@
   <form method="post" enctype="multipart/form-data">{% csrf_token %}
     {% include "includes/form_fields.html" %}
     <button class="btn btn-success" type="submit">Upload</button>
-    <a class="btn btn-outline-light" href="{% url 'home' %}">Cancel</a>
+    <a class="btn btn-outline-light" href="{% url 'track_list' %}">Cancel</a>
   </form>
 </div></div>
 {% endblock %}

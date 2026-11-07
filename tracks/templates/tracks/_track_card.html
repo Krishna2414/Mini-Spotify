@@ -1,0 +1,23 @@
+{# Track card. The .play-btn data-* attributes are the contract with Dev 3's player.js #}
+<div class="col-6 col-md-4 col-lg-3">
+  <article class="card h-100 p-2" data-track-card="{{ track.pk }}">
+    {% if track.cover %}
+      <img src="{{ track.cover.url }}" class="track-cover" alt="Cover art for {{ track.title }}">
+    {% else %}
+      <div class="track-cover track-cover-placeholder" aria-hidden="true"><i class="bi bi-music-note"></i></div>
+    {% endif %}
+    <div class="card-body px-1 pb-1">
+      <h3 class="h6 mb-0 text-truncate"><a href="{{ track.get_absolute_url }}" class="text-reset">{{ track.title }}</a></h3>
+      <p class="small text-secondary mb-2 text-truncate">{{ track.artist }}</p>
+      <button type="button" class="btn btn-success play-btn rounded-circle"
+              data-track-id="{{ track.pk }}"
+              data-src="{{ track.audio.url }}"
+              data-title="{{ track.title }}"
+              data-artist="{{ track.artist }}"
+              data-cover="{% if track.cover %}{{ track.cover.url }}{% endif %}"
+              aria-label="Play {{ track.title }} by {{ track.artist }}">
+        <i class="bi bi-play-fill" aria-hidden="true"></i>
+      </button>
+    </div>
+  </article>
+</div>

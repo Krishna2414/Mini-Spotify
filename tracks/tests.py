@@ -66,3 +66,42 @@ class TrackUploadTests(TestCase):
         })
         self.assertContains(response, "under 10 MB")
         self.assertFalse(Track.objects.filter(title="Huge").exists())
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class TrackLibraryTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("sam", password="pass12345!")
+
+    def make_track(self, title):
+        return Track.objects.create(
+            title=title, artist="Test Artist", genre="lofi",
+            audio=fake_mp3(), uploaded_by=self.user,
+        )
+
+    def test_empty_library_shows_friendly_message(self):
+        response = self.client.get(reverse("track_list"))
+        self.assertContains(response, "No tracks yet")
+
+    def test_library_shows_card_with_play_button(self):
+        track = self.make_track("Sunrise Walk")
+        response = self.client.get(reverse("track_list"))
+        self.assertContains(response, "Sunrise Walk")
+        self.assertContains(response, "Test Artist")
+        self.assertContains(response, "play-btn")
+        self.assertContains(response, f'data-src="{track.audio.url}"')
+
+    def test_newest_tracks_first(self):
+        self.make_track("Old Song")
+        self.make_track("New Song")
+        tracks = list(self.client.get(reverse("track_list")).context["tracks"])
+        self.assertEqual(tracks[0].title, "New Song")
+
+    def test_more_than_12_tracks_are_paginated(self):
+        for i in range(13):
+            self.make_track(f"Song {i}")
+        response = self.client.get(reverse("track_list"))
+        self.assertTrue(response.context["is_paginated"])
+        self.assertEqual(len(response.context["tracks"]), 12)
+        page2 = self.client.get(reverse("track_list") + "?page=2")
+        self.assertEqual(len(page2.context["tracks"]), 1)
