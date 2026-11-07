@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Upload a track | Mini Spotify{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-md-7">
+  <h1 class="h3 mb-3">Upload a track</h1>
+  <div class="alert alert-secondary small" role="note">
+    Only upload music you have the rights to, e.g. royalty-free tracks from Pixabay Music or the YouTube Audio Library.
+  </div>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    {% include "includes/form_fields.html" %}
+    <button class="btn btn-success" type="submit">Upload</button>
+    <a class="btn btn-outline-light" href="{% url 'home' %}">Cancel</a>
+  </form>
+</div></div>
+{% endblock %}

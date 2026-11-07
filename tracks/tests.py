@@ -1,0 +1,68 @@
+import shutil
+import tempfile
+
+from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
+from django.urls import reverse
+
+from .models import Track
+
+MEDIA = tempfile.mkdtemp()
+
+
+def fake_mp3(name="song.mp3", size=None):
+    content = b"ID3" + (b"0" * size if size else b"fakeaudio")
+    return SimpleUploadedFile(name, content, content_type="audio/mpeg")
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class TrackUploadTests(TestCase):
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(MEDIA, ignore_errors=True)
+
+    def setUp(self):
+        self.user = User.objects.create_user("sam", password="pass12345!")
+
+    def test_upload_page_requires_login(self):
+        response = self.client.get(reverse("track_create"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("login"), response.url)
+
+    def test_logged_in_user_can_upload(self):
+        self.client.login(username="sam", password="pass12345!")
+        response = self.client.post(reverse("track_create"), {
+            "title": "Night Drive", "artist": "Synth Co", "genre": "electronic",
+            "audio": fake_mp3("night.mp3"),
+        }, follow=True)
+        track = Track.objects.get(title="Night Drive")
+        self.assertRedirects(response, track.get_absolute_url())
+        self.assertEqual(track.uploaded_by, self.user)
+        self.assertContains(response, "Track uploaded.")
+
+    def test_cover_is_optional_and_placeholder_shows(self):
+        self.client.login(username="sam", password="pass12345!")
+        response = self.client.post(reverse("track_create"), {
+            "title": "No Cover", "artist": "X", "genre": "other", "audio": fake_mp3(),
+        }, follow=True)
+        self.assertContains(response, "track-cover-placeholder")
+
+    def test_rejects_wrong_file_type(self):
+        self.client.login(username="sam", password="pass12345!")
+        response = self.client.post(reverse("track_create"), {
+            "title": "Bad", "artist": "X", "genre": "other",
+            "audio": SimpleUploadedFile("virus.exe", b"x"),
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Track.objects.filter(title="Bad").exists())
+
+    def test_rejects_file_over_10mb(self):
+        self.client.login(username="sam", password="pass12345!")
+        response = self.client.post(reverse("track_create"), {
+            "title": "Huge", "artist": "X", "genre": "other",
+            "audio": fake_mp3("huge.mp3", size=11 * 1024 * 1024),
+        })
+        self.assertContains(response, "under 10 MB")
+        self.assertFalse(Track.objects.filter(title="Huge").exists())

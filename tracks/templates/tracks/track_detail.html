@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ track.title }} | Mini Spotify{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-md-4">
+    {% if track.cover %}
+      <img src="{{ track.cover.url }}" class="track-cover" alt="Cover art for {{ track.title }}">
+    {% else %}
+      <div class="track-cover track-cover-placeholder" aria-hidden="true"><i class="bi bi-music-note"></i></div>
+    {% endif %}
+  </div>
+  <div class="col-md-8">
+    <h1 class="h2">{{ track.title }}</h1>
+    <p class="lead text-secondary">{{ track.artist }} &middot; {{ track.get_genre_display }}</p>
+    <p class="small">Uploaded by <a href="{% url 'profile_detail' track.uploaded_by.username %}">{{ track.uploaded_by.username }}</a> on {{ track.created_at|date:"j M Y" }}</p>
+    <button type="button" class="btn btn-success btn-lg play-btn"
+            data-track-id="{{ track.pk }}" data-src="{{ track.audio.url }}"
+            data-title="{{ track.title }}" data-artist="{{ track.artist }}"
+            data-cover="{% if track.cover %}{{ track.cover.url }}{% endif %}"
+            aria-label="Play {{ track.title }} by {{ track.artist }}">
+      <i class="bi bi-play-fill" aria-hidden="true"></i> Play
+    </button>
+  </div>
+</div>
+{% endblock %}
