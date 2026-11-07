@@ -250,3 +250,24 @@ class ProfileUploadsTests(TestCase):
     def test_user_with_no_uploads_shows_message(self):
         response = self.client.get(reverse("profile_detail", args=["alex"]))
         self.assertContains(response, "No uploads yet.")
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class PlayerBarTests(TestCase):
+    """The JavaScript itself is tested by hand (see TESTING.md); these check the HTML it needs."""
+
+    def setUp(self):
+        user = User.objects.create_user("sam", password="pass12345!")
+        Track.objects.create(title="Ocean Glow", artist="Calm Waves",
+                             audio=fake_mp3(), uploaded_by=user)
+
+    def test_player_bar_and_script_on_every_page(self):
+        for url in [reverse("home"), reverse("track_list")]:
+            response = self.client.get(url)
+            self.assertContains(response, 'id="player"')
+            self.assertContains(response, '<audio id="audio"')
+            self.assertContains(response, "js/player.js")
+
+    def test_player_starts_hidden(self):
+        response = self.client.get(reverse("track_list"))
+        self.assertContains(response, 'aria-label="Music player" hidden')
