@@ -5,6 +5,8 @@ from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils.dateformat import format as date_format
+from django.utils.timezone import localtime
 
 from .models import Track
 
@@ -66,3 +68,162 @@ class TrackUploadTests(TestCase):
         })
         self.assertContains(response, "under 10 MB")
         self.assertFalse(Track.objects.filter(title="Huge").exists())
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class TrackLibraryTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("sam", password="pass12345!")
+
+    def make_track(self, title):
+        return Track.objects.create(
+            title=title, artist="Test Artist", genre="lofi",
+            audio=fake_mp3(), uploaded_by=self.user,
+        )
+
+    def test_empty_library_shows_friendly_message(self):
+        response = self.client.get(reverse("track_list"))
+        self.assertContains(response, "No tracks yet")
+
+    def test_library_shows_card_with_play_button(self):
+        track = self.make_track("Sunrise Walk")
+        response = self.client.get(reverse("track_list"))
+        self.assertContains(response, "Sunrise Walk")
+        self.assertContains(response, "Test Artist")
+        self.assertContains(response, "play-btn")
+        self.assertContains(response, f'data-src="{track.audio.url}"')
+
+    def test_newest_tracks_first(self):
+        self.make_track("Old Song")
+        self.make_track("New Song")
+        tracks = list(self.client.get(reverse("track_list")).context["tracks"])
+        self.assertEqual(tracks[0].title, "New Song")
+
+    def test_more_than_12_tracks_are_paginated(self):
+        for i in range(13):
+            self.make_track(f"Song {i}")
+        response = self.client.get(reverse("track_list"))
+        self.assertTrue(response.context["is_paginated"])
+        self.assertEqual(len(response.context["tracks"]), 12)
+        page2 = self.client.get(reverse("track_list") + "?page=2")
+        self.assertEqual(len(page2.context["tracks"]), 1)
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class TrackEditTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user("owner", password="pass12345!")
+        self.other = User.objects.create_user("other", password="pass12345!")
+        self.track = Track.objects.create(
+            title="Sunrse Walk", artist="Lo-fi Lab", genre="lofi",
+            audio=fake_mp3(), uploaded_by=self.owner,
+        )
+        self.edit_url = reverse("track_update", args=[self.track.pk])
+
+    def test_edit_button_only_shown_to_owner(self):
+        self.client.login(username="owner", password="pass12345!")
+        self.assertContains(self.client.get(self.track.get_absolute_url()), self.edit_url)
+        self.client.login(username="other", password="pass12345!")
+        self.assertNotContains(self.client.get(self.track.get_absolute_url()), self.edit_url)
+
+    def test_non_owner_gets_403(self):
+        self.client.login(username="other", password="pass12345!")
+        self.assertEqual(self.client.get(self.edit_url).status_code, 403)
+        response = self.client.post(self.edit_url, {"title": "Hacked", "artist": "X", "genre": "other"})
+        self.assertEqual(response.status_code, 403)
+        self.track.refresh_from_db()
+        self.assertEqual(self.track.title, "Sunrse Walk")
+
+    def test_logged_out_user_sent_to_login(self):
+        response = self.client.get(self.edit_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("login"), response.url)
+
+    def test_owner_can_edit_and_sees_success_message(self):
+        self.client.login(username="owner", password="pass12345!")
+        response = self.client.post(self.edit_url, {
+            "title": "Sunrise Walk", "artist": "Lo-fi Lab", "genre": "lofi",
+        }, follow=True)
+        self.track.refresh_from_db()
+        self.assertEqual(self.track.title, "Sunrise Walk")
+        self.assertRedirects(response, self.track.get_absolute_url())
+        self.assertContains(response, "Track updated.")
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class TrackDetailTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("sam", password="pass12345!")
+        self.track = Track.objects.create(
+            title="Night Drive", artist="Synth Co", genre="electronic",
+            audio=fake_mp3(), uploaded_by=self.user,
+        )
+
+    def test_page_shows_track_details(self):
+        response = self.client.get(self.track.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Night Drive")
+        self.assertContains(response, "Synth Co")
+        self.assertContains(response, "Electronic")  # genre display name
+        self.assertContains(response, date_format(localtime(self.track.created_at), "j M Y"))
+        self.assertContains(response, "track-cover-placeholder")  # no cover uploaded
+
+    def test_play_button_has_player_data(self):
+        response = self.client.get(self.track.get_absolute_url())
+        self.assertContains(response, "btn-lg play-btn")
+        self.assertContains(response, f'data-src="{self.track.audio.url}"')
+        self.assertContains(response, 'data-title="Night Drive"')
+
+    def test_uploader_links_to_profile(self):
+        response = self.client.get(self.track.get_absolute_url())
+        self.assertContains(response, f'href="{reverse("profile_detail", args=["sam"])}"')
+
+    def test_visitors_can_view_without_logging_in(self):
+        self.assertEqual(self.client.get(self.track.get_absolute_url()).status_code, 200)
+
+    def test_missing_track_returns_404(self):
+        self.assertEqual(self.client.get(reverse("track_detail", args=[999])).status_code, 404)
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class TrackDeleteTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user("owner", password="pass12345!")
+        self.other = User.objects.create_user("other", password="pass12345!")
+        self.track = Track.objects.create(
+            title="Blue Hour", artist="Jazz Trio", genre="jazz",
+            audio=fake_mp3(), uploaded_by=self.owner,
+        )
+        self.delete_url = reverse("track_delete", args=[self.track.pk])
+
+    def test_get_shows_confirmation_and_deletes_nothing(self):
+        self.client.login(username="owner", password="pass12345!")
+        response = self.client.get(self.delete_url)
+        self.assertContains(response, 'Delete "Blue Hour"?')
+        self.assertTrue(Track.objects.filter(pk=self.track.pk).exists())
+
+    def test_delete_button_only_shown_to_owner(self):
+        self.client.login(username="owner", password="pass12345!")
+        self.assertContains(self.client.get(self.track.get_absolute_url()), self.delete_url)
+        self.client.login(username="other", password="pass12345!")
+        self.assertNotContains(self.client.get(self.track.get_absolute_url()), self.delete_url)
+
+    def test_non_owner_cannot_delete(self):
+        self.client.login(username="other", password="pass12345!")
+        self.assertEqual(self.client.get(self.delete_url).status_code, 403)
+        self.assertEqual(self.client.post(self.delete_url).status_code, 403)
+        self.assertTrue(Track.objects.filter(pk=self.track.pk).exists())
+
+    def test_owner_can_delete(self):
+        self.client.login(username="owner", password="pass12345!")
+        response = self.client.post(self.delete_url, follow=True)
+        self.assertRedirects(response, reverse("track_list"))
+        self.assertContains(response, "was deleted")
+        self.assertFalse(Track.objects.filter(pk=self.track.pk).exists())
+
+    def test_audio_file_removed_from_storage(self):
+        storage, name = self.track.audio.storage, self.track.audio.name
+        self.assertTrue(storage.exists(name))
+        self.client.login(username="owner", password="pass12345!")
+        self.client.post(self.delete_url)
+        self.assertFalse(storage.exists(name))
