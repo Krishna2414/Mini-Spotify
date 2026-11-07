@@ -26,8 +26,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Our apps
     "accounts",       # Dev 1
-    # "tracks",       # Dev 2 uncomments this line
-    # "playlists",    # Dev 4 uncomments this line
+    "tracks",      # Dev 2
 ]
 if USE_CLOUDINARY:
     INSTALLED_APPS += ["cloudinary_storage", "cloudinary"]
