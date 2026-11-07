@@ -1,0 +1,135 @@
+/* Mini Spotify player
+ *
+ * Any element with class "play-btn" and these attributes
+ * can be played: data-track-id, data-src, data-title, data-artist, data-cover.
+ */
+(function () {
+  "use strict";
+
+  const audio = document.getElementById("audio");
+  if (!audio) return; // page has no player
+
+  const els = {
+    bar: document.getElementById("player"),
+    cover: document.getElementById("player-cover"),
+    coverPlaceholder: document.getElementById("player-cover-placeholder"),
+    title: document.getElementById("player-title"),
+    artist: document.getElementById("player-artist"),
+    play: document.getElementById("btn-play"),
+    status: document.getElementById("player-status"),
+  };
+
+  // 1. Build the queue from every play button on the page (each track once).
+  const queue = [];
+  document.querySelectorAll(".play-btn").forEach(function (btn) {
+    const id = btn.dataset.trackId;
+    if (!queue.some(function (t) { return t.id === id; })) {
+      queue.push({
+        id: id,
+        src: btn.dataset.src,
+        title: btn.dataset.title,
+        artist: btn.dataset.artist,
+        cover: btn.dataset.cover,
+      });
+    }
+  });
+  let current = -1; // index in queue of the loaded track
+
+  function showError(message) {
+    els.status.textContent = message;
+    els.bar.classList.add("has-error");
+  }
+
+  function clearError() {
+    els.status.textContent = "";
+    els.bar.classList.remove("has-error");
+  }
+
+  // 2. Keep every play icon, label and card highlight in sync with the audio.
+  function updateButtons() {
+    const playing = !audio.paused && !audio.ended;
+    const currentId = current >= 0 ? queue[current].id : null;
+
+    els.play.innerHTML = playing
+      ? '<i class="bi bi-pause-fill" aria-hidden="true"></i>'
+      : '<i class="bi bi-play-fill" aria-hidden="true"></i>';
+    els.play.setAttribute("aria-label", playing ? "Pause" : "Play");
+
+    document.querySelectorAll(".play-btn").forEach(function (btn) {
+      const isCurrent = btn.dataset.trackId === currentId;
+      const active = isCurrent && playing;
+      const icon = btn.querySelector("i");
+      if (icon) icon.className = active ? "bi bi-pause-fill" : "bi bi-play-fill";
+      btn.setAttribute("aria-pressed", active ? "true" : "false");
+      btn.setAttribute("aria-label",
+        (active ? "Pause " : "Play ") + btn.dataset.title + " by " + btn.dataset.artist);
+      const card = btn.closest("[data-track-card]");
+      if (card) card.classList.toggle("is-playing", isCurrent);
+    });
+  }
+
+  // 3. Load a track into the player bar.
+  function load(index) {
+    const track = queue[index];
+    current = index;
+    clearError();
+    audio.src = track.src;
+    els.title.textContent = track.title;
+    els.artist.textContent = track.artist;
+    if (track.cover) {
+      els.cover.src = track.cover;
+      els.cover.alt = "Cover art for " + track.title;
+      els.cover.hidden = false;
+      els.coverPlaceholder.hidden = true;
+    } else {
+      els.cover.hidden = true;
+      els.coverPlaceholder.hidden = false;
+    }
+    els.bar.hidden = false;
+    document.body.classList.add("player-open");
+  }
+
+  function play() {
+    const attempt = audio.play();
+    if (attempt) {
+      attempt.catch(function (err) {
+        // NotAllowedError = browser blocked autoplay; anything else = bad file
+        if (err.name !== "NotAllowedError" && err.name !== "AbortError") {
+          showError("Sorry, this track can't be played.");
+        }
+        updateButtons();
+      });
+    }
+  }
+
+  function toggle() {
+    if (current === -1) return;
+    if (audio.paused) play(); else audio.pause();
+  }
+
+  // 4. Clicks on any card / detail-page play button (event delegation).
+  document.addEventListener("click", function (e) {
+    const btn = e.target.closest(".play-btn");
+    if (!btn) return;
+    const index = queue.findIndex(function (t) { return t.id === btn.dataset.trackId; });
+    if (index === -1) return;
+    if (index === current) {
+      toggle();          // same track: pause / resume
+    } else {
+      load(index);       // new track: load and play
+      play();
+    }
+  });
+
+  els.play.addEventListener("click", toggle);
+
+  // 5. Audio events drive the UI.
+  audio.addEventListener("play", updateButtons);
+  audio.addEventListener("pause", updateButtons);
+  audio.addEventListener("ended", updateButtons);
+  audio.addEventListener("error", function () {
+    if (!audio.getAttribute("src")) return;
+    showError("Sorry, this track can't be played.");
+    updateButtons();
+  });
+})();
