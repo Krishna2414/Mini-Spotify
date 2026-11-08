@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{% if query %}"{{ query }}" – {% endif %}Search | Mini Spotify{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Search</h1>
+
+<form class="row g-2 mb-4" method="get" action="{% url 'search' %}" role="search">
+  <div class="col-md-9">
+    <label for="search-q" class="visually-hidden">Title or artist</label>
+    <input id="search-q" class="form-control" type="search" name="q" value="{{ query }}"
+           placeholder="Search by title or artist" autofocus>
+  </div>
+  <div class="col-md-3">
+    <button class="btn btn-success w-100" type="submit"><i class="bi bi-search" aria-hidden="true"></i> Search</button>
+  </div>
+</form>
+
+{% if query %}
+  <p class="text-secondary" role="status">
+    {{ count }} result{{ count|pluralize }} for "{{ query }}"
+  </p>
+  <div class="row g-3">
+    {% for track in tracks %}
+      {% include "tracks/_track_card.html" %}
+    {% empty %}
+      <div class="col-12 text-center py-4">
+        <i class="bi bi-search display-5 text-secondary" aria-hidden="true"></i>
+        <p class="lead mt-3">No tracks match your search.</p>
+        <a href="{% url 'track_list' %}">Browse the whole library</a>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-secondary">Type a song title or artist name to start.</p>
+{% endif %}
+{% endblock %}

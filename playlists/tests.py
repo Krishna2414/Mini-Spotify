@@ -178,3 +178,50 @@ class RemoveTrackTests(PlaylistBase):
         self.login()
         response = self.client.get(reverse("remove_track", args=[playlist.pk, self.track.pk]))
         self.assertEqual(response.status_code, 405)
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class SearchTests(TestCase):
+    def setUp(self):
+        user = User.objects.create_user("sam", password="pass12345!")
+        for title, artist in [("Night Drive", "Synth Co"), ("Ocean Glow", "Calm Waves"),
+                              ("Blue Hour", "Jazz Trio")]:
+            Track.objects.create(title=title, artist=artist,
+                                 audio=SimpleUploadedFile("a.mp3", b"ID3"), uploaded_by=user)
+
+    def search(self, q):
+        return self.client.get(reverse("search"), {"q": q})
+
+    def test_search_by_title_ignores_case(self):
+        response = self.search("night DRIVE")
+        self.assertContains(response, "Night Drive")
+        self.assertNotContains(response, "Ocean Glow")
+
+    def test_search_by_artist(self):
+        response = self.search("jazz")
+        self.assertContains(response, "Blue Hour")
+        self.assertNotContains(response, "Night Drive")
+
+    def test_partial_match(self):
+        self.assertContains(self.search("ocea"), "Ocean Glow")
+
+    def test_results_are_playable_cards_with_count(self):
+        response = self.search("o")  # matches all three
+        self.assertContains(response, "3 results for")
+        self.assertContains(response, "play-btn", count=3)
+
+    def test_one_result_is_singular(self):
+        self.assertContains(self.search("synth"), "1 result for")
+
+    def test_no_matches_message(self):
+        self.assertContains(self.search("zzzz"), "No tracks match your search.")
+
+    def test_empty_search_shows_no_results(self):
+        response = self.search("")
+        self.assertNotContains(response, "play-btn")
+        self.assertContains(response, "Type a song title")
+
+    def test_navbar_search_box_points_to_search(self):
+        response = self.client.get(reverse("home"))
+        self.assertContains(response, f'action="{reverse("search")}"')
+        self.assertContains(response, 'name="q"')
