@@ -5,13 +5,31 @@
 {% if playlist.description %}<p class="lead text-secondary">{{ playlist.description }}</p>{% endif %}
 <p class="small">{{ playlist.tracks.count }} track{{ playlist.tracks.count|pluralize }}</p>
 
-<div class="row g-3">
-  {# Reuses Dev 2's card, so the play buttons (and next/prev) work here too #}
+<ul class="list-group">
   {% for track in playlist.tracks.all %}
-    {% include "tracks/_track_card.html" %}
+    <li class="list-group-item bg-dark text-light d-flex align-items-center gap-3">
+      <button type="button" class="btn btn-success play-btn rounded-circle"
+              data-track-id="{{ track.pk }}" data-src="{{ track.audio.url }}"
+              data-title="{{ track.title }}" data-artist="{{ track.artist }}"
+              data-cover="{% if track.cover %}{{ track.cover.url }}{% endif %}"
+              aria-label="Play {{ track.title }} by {{ track.artist }}">
+        <i class="bi bi-play-fill" aria-hidden="true"></i>
+      </button>
+      <div class="flex-grow-1 text-truncate">
+        <a href="{{ track.get_absolute_url }}">{{ track.title }}</a>
+        <span class="text-secondary small">&middot; {{ track.artist }}</span>
+      </div>
+      <form method="post" action="{% url 'remove_track' playlist.pk track.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger btn-sm"
+                aria-label="Remove {{ track.title }} from this playlist">
+          <i class="bi bi-x-lg" aria-hidden="true"></i> Remove
+        </button>
+      </form>
+    </li>
   {% empty %}
-    <p class="text-secondary">No tracks yet. Browse the <a href="{% url 'track_list' %}">Library</a> and add some.</p>
+    <li class="list-group-item bg-dark text-secondary">No tracks yet. Browse the <a href="{% url 'track_list' %}">Library</a> and add some.</li>
   {% endfor %}
-</div>
+</ul>
 <a class="btn btn-outline-light btn-sm mt-3" href="{% url 'playlist_list' %}">Back to My Playlists</a>
 {% endblock %}

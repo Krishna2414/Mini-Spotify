@@ -69,3 +69,15 @@ def add_track(request, track_pk):
     return redirect(track)  # back to the track page (uses Track.get_absolute_url)
 
 # Create your views here.
+@login_required
+@require_POST
+def remove_track(request, pk, track_pk):
+    # owner=request.user: you can only change your own playlists (404 otherwise)
+    playlist = get_object_or_404(Playlist, pk=pk, owner=request.user)
+    track = get_object_or_404(Track, pk=track_pk)
+    if playlist.tracks.filter(pk=track.pk).exists():
+        playlist.tracks.remove(track)  # unlinks only; the Track row is not deleted
+        messages.success(request, f'Removed "{track.title}" from "{playlist.name}".')
+    else:
+        messages.warning(request, f'"{track.title}" is not in this playlist.')
+    return redirect("playlist_detail", pk=playlist.pk)
