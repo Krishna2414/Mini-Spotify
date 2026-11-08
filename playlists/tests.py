@@ -152,4 +152,29 @@ class AddToPlaylistTests(PlaylistBase):
         response = self.post_add("", follow=True)
         self.assertContains(response, "choose a playlist")
 
-# Create your tests here.
+# remove track
+class RemoveTrackTests(PlaylistBase):
+    def test_remove_track_from_my_playlist(self):
+        playlist = Playlist.objects.create(owner=self.user, name="Chill")
+        playlist.tracks.add(self.track)
+        self.login()
+        response = self.client.post(
+            reverse("remove_track", args=[playlist.pk, self.track.pk]), follow=True
+        )
+        self.assertRedirects(response, reverse("playlist_detail", args=[playlist.pk]))
+        self.assertEqual(playlist.tracks.count(), 0)
+        self.assertTrue(Track.objects.filter(pk=self.track.pk).exists())  # track survives
+
+    def test_cannot_remove_from_someone_elses_playlist(self):
+        theirs = Playlist.objects.create(owner=self.other, name="Theirs")
+        theirs.tracks.add(self.track)
+        self.login()  # logged in as sam
+        response = self.client.post(reverse("remove_track", args=[theirs.pk, self.track.pk]))
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(theirs.tracks.count(), 1)
+
+    def test_remove_is_post_only(self):
+        playlist = Playlist.objects.create(owner=self.user, name="Chill")
+        self.login()
+        response = self.client.get(reverse("remove_track", args=[playlist.pk, self.track.pk]))
+        self.assertEqual(response.status_code, 405)
