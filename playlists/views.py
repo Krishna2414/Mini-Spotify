@@ -4,7 +4,7 @@ from django.db import IntegrityError
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
-
+from django.db.models import Q
 from tracks.models import Track
 
 from .forms import PlaylistForm
@@ -81,3 +81,18 @@ def remove_track(request, pk, track_pk):
     else:
         messages.warning(request, f'"{track.title}" is not in this playlist.')
     return redirect("playlist_detail", pk=playlist.pk)
+
+
+def search(request):
+    """Search tracks by title or artist (case-insensitive)."""
+    query = request.GET.get("q", "").strip()
+    tracks = Track.objects.none()
+    if query:
+        tracks = Track.objects.filter(
+            Q(title__icontains=query) | Q(artist__icontains=query)
+        )
+    return render(request, "playlists/search.html", {
+        "query": query,
+        "tracks": tracks,
+        "count": tracks.count(),
+    })

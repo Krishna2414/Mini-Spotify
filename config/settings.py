@@ -111,7 +111,7 @@ LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "home"
 
-# Free users can create this many playlists; Premium users are unlimited (Dev 4).
+# Free users can create this many playlists; Premium users are unlimited.
 FREE_PLAYLIST_LIMIT = 3
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
