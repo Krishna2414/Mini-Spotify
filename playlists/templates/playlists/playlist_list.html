@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}My Playlists | Mini Spotify{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">My Playlists</h1>
+  <a class="btn btn-success btn-sm" href="{% url 'playlist_create' %}"><i class="bi bi-plus-lg" aria-hidden="true"></i> New playlist</a>
+</div>
+
+<div class="list-group">
+  {% for playlist in playlists %}
+    <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center bg-dark text-light"
+       href="{% url 'playlist_detail' playlist.pk %}">
+      {{ playlist.name }}
+      <span class="badge bg-secondary">{{ playlist.track_count }} track{{ playlist.track_count|pluralize }}</span>
+    </a>
+  {% empty %}
+    <p class="text-secondary">You haven't created any playlists yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

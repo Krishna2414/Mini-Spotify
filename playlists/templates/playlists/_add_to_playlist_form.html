@@ -1,0 +1,20 @@
+{# Rendered by the {% add_to_playlist_form track %} tag #}
+<div class="mt-3">
+  {% if not user.is_authenticated %}
+    <p class="small mb-0"><a href="{% url 'login' %}?next={{ track.get_absolute_url }}">Log in</a> to add this track to a playlist.</p>
+  {% elif playlists %}
+    <form method="post" action="{% url 'add_track' track.pk %}" class="d-flex gap-2 align-items-center">
+      {% csrf_token %}
+      <label for="add-to-playlist" class="visually-hidden">Add to playlist</label>
+      <select id="add-to-playlist" name="playlist" class="form-select form-select-sm w-auto" required>
+        <option value="" selected disabled>Add to playlist…</option>
+        {% for playlist in playlists %}
+          <option value="{{ playlist.pk }}">{{ playlist.name }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-outline-success btn-sm">Add</button>
+    </form>
+  {% else %}
+    <p class="small mb-0">You have no playlists yet. <a href="{% url 'playlist_create' %}">Create one</a></p>
+  {% endif %}
+</div>

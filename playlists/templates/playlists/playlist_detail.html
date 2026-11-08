@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ playlist.name }} | Mini Spotify{% endblock %}
+{% block content %}
+<h1 class="h2">{{ playlist.name }}</h1>
+{% if playlist.description %}<p class="lead text-secondary">{{ playlist.description }}</p>{% endif %}
+<p class="small">{{ playlist.tracks.count }} track{{ playlist.tracks.count|pluralize }}</p>
+
+<div class="row g-3">
+  {# Reuses Dev 2's card, so the play buttons (and next/prev) work here too #}
+  {% for track in playlist.tracks.all %}
+    {% include "tracks/_track_card.html" %}
+  {% empty %}
+    <p class="text-secondary">No tracks yet. Browse the <a href="{% url 'track_list' %}">Library</a> and add some.</p>
+  {% endfor %}
+</div>
+<a class="btn btn-outline-light btn-sm mt-3" href="{% url 'playlist_list' %}">Back to My Playlists</a>
+{% endblock %}
