@@ -23,6 +23,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("accounts.urls")),
     path("tracks/", include("tracks.urls")),
+    path("playlists/", include("playlists.urls")),
 ]
 
 if settings.DEBUG:

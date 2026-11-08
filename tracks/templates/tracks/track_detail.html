@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load playlist_tags %}
 {% block title %}{{ track.title }} | Mini Spotify{% endblock %}
 {% block content %}
 <div class="row g-4">
@@ -20,6 +21,7 @@
             aria-label="Play {{ track.title }} by {{ track.artist }}">
       <i class="bi bi-play-fill" aria-hidden="true"></i> Play
     </button>
+    {% add_to_playlist_form track %}
     {% if user == track.uploaded_by %}
       <div class="mt-4">
         <a class="btn btn-outline-light btn-sm" href="{% url 'track_update' track.pk %}"><i class="bi bi-pencil" aria-hidden="true"></i> Edit</a>

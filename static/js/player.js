@@ -16,6 +16,8 @@
     title: document.getElementById("player-title"),
     artist: document.getElementById("player-artist"),
     play: document.getElementById("btn-play"),
+    prev: document.getElementById("btn-prev"),
+    next: document.getElementById("btn-next"),
     status: document.getElementById("player-status"),
   };
 
@@ -107,6 +109,34 @@
     if (audio.paused) play(); else audio.pause();
   }
 
+    // Skip forwards: play the following track; after the last, wrap to the first.
+  function next() {
+    if (current === -1) return;                // nothing loaded yet
+    load((current + 1) % queue.length);        // % makes the last track wrap to index 0
+    play();
+  }
+
+  // Skip backwards: more than 3 seconds in => restart this track,
+  // otherwise play the one before (the first track wraps to the last).
+  function prev() {
+    if (current === -1) return;
+    if (audio.currentTime > 3) {
+      audio.currentTime = 0;
+      return;
+    }
+    load((current - 1 + queue.length) % queue.length);
+    play();
+  }
+
+  // When a track ends, the next one starts automatically.
+  function onEnded() {
+    if (queue.length > 1) {
+      next();
+    } else {
+      updateButtons();  // a lone track (e.g. on a track detail page) just stops, no endless loop
+    }
+  }
+
   // 4. Clicks on any card / detail-page play button (event delegation).
   document.addEventListener("click", function (e) {
     const btn = e.target.closest(".play-btn");
@@ -122,11 +152,13 @@
   });
 
   els.play.addEventListener("click", toggle);
+  els.prev.addEventListener("click", prev);
+  els.next.addEventListener("click", next);
 
   // 5. Audio events drive the UI.
   audio.addEventListener("play", updateButtons);
   audio.addEventListener("pause", updateButtons);
-  audio.addEventListener("ended", updateButtons);
+  audio.addEventListener("ended", onEnded);  // onEnded calls next(), which updates the buttons itself
   audio.addEventListener("error", function () {
     if (!audio.getAttribute("src")) return;
     showError("Sorry, this track can't be played.");

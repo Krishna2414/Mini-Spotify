@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     # Our apps
     "accounts",       # Dev 1
     "tracks",      # Dev 2
+    "playlists"    # Dev 3
 ]
 if USE_CLOUDINARY:
     INSTALLED_APPS += ["cloudinary_storage", "cloudinary"]

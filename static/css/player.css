@@ -36,6 +36,14 @@
 .player-controls { 
     display: flex; 
     justify-content: center; 
+    align-items: center; 
+    gap: .5rem; 
+}
+.player-skip { 
+    font-size: 1.6rem; 
+    padding: 0 .25rem; 
+    line-height: 1; 
+    text-decoration: none; 
 }
 .player-play {
   width: 44px; 
