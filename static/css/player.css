@@ -152,7 +152,6 @@ body.player-open {
     grid-template-columns: 1fr auto;   /* track info | play button */
     gap: .75rem;
     padding: .75rem 1rem;
-    padding-bottom: calc(.75rem + env(safe-area-inset-bottom)); /* iPhone home bar */
   }
   .player-cover { 
     width: 48px; 
@@ -204,7 +203,7 @@ body.player-open {
      grid-column: 1 / -1; 
      justify-self: start; 
   }
-  .player-right:has(.player-status:empty) { 
-    display: none; 
+  .player-bar:not(.has-error) .player-right {
+    display: none;
   }
 }
