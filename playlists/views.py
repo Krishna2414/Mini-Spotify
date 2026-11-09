@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from django.db.models import Q
 from tracks.models import Track
+from django.core.exceptions import PermissionDenied
 
 from .forms import PlaylistForm
 from .models import Playlist
@@ -40,10 +41,10 @@ def playlist_list(request):
     return render(request, "playlists/playlist_list.html", {"playlists": playlists})
 
 
-@login_required
 def playlist_detail(request, pk):
-    # The page you land on after creating a playlist. Owner only (404 otherwise).
-    playlist = get_object_or_404(Playlist, pk=pk, owner=request.user)
+    playlist = get_object_or_404(Playlist, pk=pk)
+    if not playlist.can_view(request.user):
+        raise PermissionDenied
     return render(request, "playlists/playlist_detail.html", {"playlist": playlist})
 
 

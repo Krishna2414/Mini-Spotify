@@ -1,7 +1,13 @@
 {% extends "base.html" %}
 {% block title %}{{ playlist.name }} | Mini Spotify{% endblock %}
 {% block content %}
-<h1 class="h2">{{ playlist.name }}</h1>
+<h1 class="h3">{{ playlist.name }}
+  {% if playlist.is_public %}
+    <span class="badge bg-success"><i class="bi bi-globe" aria-hidden="true"></i> Public</span>
+  {% else %}
+    <span class="badge bg-secondary"><i class="bi bi-lock" aria-hidden="true"></i> Private</span>
+  {% endif %}
+</h1>
 {% if playlist.description %}<p class="lead text-secondary">{{ playlist.description }}</p>{% endif %}
 <p class="small">{{ playlist.tracks.count }} track{{ playlist.tracks.count|pluralize }}</p>
 
