@@ -4,11 +4,13 @@
 {% block content %}
 <div class="row g-4">
   <div class="col-md-4">
-    {% if track.cover %}
-      <img src="{{ track.cover.url }}" class="track-cover" alt="Cover art for {{ track.title }}">
-    {% else %}
-      <div class="track-cover track-cover-placeholder" aria-hidden="true"><i class="bi bi-music-note"></i></div>
-    {% endif %}
+    <div class="cover-box">
+      {% if track.cover %}
+        <img src="{{ track.cover.url }}" class="track-cover" alt="Cover art for {{ track.title }}">
+      {% else %}
+        <div class="track-cover track-cover-placeholder" aria-hidden="true"><i class="bi bi-music-note"></i></div>
+      {% endif %}
+    </div>
   </div>
   <div class="col-md-8">
     <h1 class="h2">{{ track.title }}</h1>
