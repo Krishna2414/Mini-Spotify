@@ -4,19 +4,28 @@
 <h1 class="h3 mb-3">Search</h1>
 
 <form class="row g-2 mb-4" method="get" action="{% url 'search' %}" role="search">
-  <div class="col-md-9">
+  <div class="col-md-6">
     <label for="search-q" class="visually-hidden">Title or artist</label>
     <input id="search-q" class="form-control" type="search" name="q" value="{{ query }}"
-           placeholder="Search by title or artist" autofocus>
+           placeholder="Search by title or artist">
+  </div>
+  <div class="col-md-3">
+    <label for="search-genre" class="visually-hidden">Genre</label>
+    <select id="search-genre" name="genre" class="form-select">
+      <option value="">All genres</option>
+      {% for value, label in genres %}
+        <option value="{{ value }}" {% if value == genre %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
   </div>
   <div class="col-md-3">
     <button class="btn btn-success w-100" type="submit"><i class="bi bi-search" aria-hidden="true"></i> Search</button>
   </div>
 </form>
 
-{% if query %}
+{% if searched %}
   <p class="text-secondary" role="status">
-    {{ count }} result{{ count|pluralize }} for "{{ query }}"
+    {{ count }} result{{ count|pluralize }}{% if query %} for "{{ query }}"{% endif %}{% if genre %} in {{ genre_label }}{% endif %}
   </p>
   <div class="row g-3">
     {% for track in tracks %}
@@ -30,6 +39,6 @@
     {% endfor %}
   </div>
 {% else %}
-  <p class="text-secondary">Type a song title or artist name to start.</p>
+  <p class="text-secondary">Type a song title or artist name, or pick a genre, to start.</p>
 {% endif %}
 {% endblock %}

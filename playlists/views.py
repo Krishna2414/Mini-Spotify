@@ -100,15 +100,27 @@ def remove_track(request, pk, track_pk):
 
 
 def search(request):
-    """Search tracks by title or artist (case-insensitive)."""
+    """Search tracks by title or artist (US24), optionally filtered by genre (US26)."""
     query = request.GET.get("q", "").strip()
+    genre = request.GET.get("genre", "")
+    genres = dict(Track.GENRES)
+    if genre not in genres:          # ignore unknown values like ?genre=banana
+        genre = ""
+
     tracks = Track.objects.none()
-    if query:
-        tracks = Track.objects.filter(
-            Q(title__icontains=query) | Q(artist__icontains=query)
-        )
+    if query or genre:
+        tracks = Track.objects.all()
+        if query:
+            tracks = tracks.filter(Q(title__icontains=query) | Q(artist__icontains=query))
+        if genre:
+            tracks = tracks.filter(genre=genre)
+
     return render(request, "playlists/search.html", {
         "query": query,
+        "genre": genre,
+        "genre_label": genres.get(genre, ""),
+        "genres": Track.GENRES,
         "tracks": tracks,
         "count": tracks.count(),
+        "searched": bool(query or genre),
     })

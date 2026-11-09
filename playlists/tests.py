@@ -152,6 +152,7 @@ class AddToPlaylistTests(PlaylistBase):
         response = self.post_add("", follow=True)
         self.assertContains(response, "choose a playlist")
 
+
 # remove track
 class RemoveTrackTests(PlaylistBase):
     def test_remove_track_from_my_playlist(self):
@@ -288,3 +289,52 @@ class PlaylistPrivacyTests(TestCase):
         p = Playlist.objects.create(owner=self.owner, name="Secret")
         response = self.client.get(p.get_absolute_url())
         self.assertContains(response, "This is private", status_code=403)
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class GenreFilterTests(TestCase):
+    def setUp(self):
+        user = User.objects.create_user("sam", password="pass12345!")
+        for title, artist, genre in [("Night Drive", "Synth Co", "electronic"),
+                                     ("Neon Nights", "Synth Co", "pop"),
+                                     ("Blue Hour", "Jazz Trio", "jazz")]:
+            Track.objects.create(title=title, artist=artist, genre=genre,
+                                 audio=SimpleUploadedFile("a.mp3", b"ID3"), uploaded_by=user)
+
+    def search(self, **params):
+        return self.client.get(reverse("search"), params)
+
+    def test_dropdown_has_all_genres_option(self):
+        response = self.search()
+        self.assertContains(response, '<option value="">All genres</option>', html=True)
+        self.assertContains(response, '<option value="jazz">Jazz</option>', html=True)
+
+    def test_genre_on_its_own(self):
+        response = self.search(genre="jazz")
+        self.assertContains(response, "Blue Hour")
+        self.assertNotContains(response, "Night Drive")
+        self.assertContains(response, "1 result in Jazz")
+
+    def test_genre_combined_with_search_term(self):
+        response = self.search(q="synth", genre="electronic")
+        self.assertContains(response, "Night Drive")
+        self.assertNotContains(response, "Neon Nights")   # same artist, different genre
+        self.assertContains(response, '1 result for "synth" in Electronic')
+
+    def test_all_genres_with_term_searches_everything(self):
+        response = self.search(q="synth", genre="")
+        self.assertContains(response, "Night Drive")
+        self.assertContains(response, "Neon Nights")
+
+    def test_selected_genre_stays_selected(self):
+        response = self.search(genre="jazz")
+        self.assertContains(response, '<option value="jazz" selected>Jazz</option>', html=True)
+
+    def test_no_matches_in_genre(self):
+        response = self.search(q="synth", genre="jazz")
+        self.assertContains(response, "No tracks match your search.")
+
+    def test_unknown_genre_is_ignored(self):
+        response = self.search(q="synth", genre="banana")
+        self.assertContains(response, "2 results")
+
