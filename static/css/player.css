@@ -81,12 +81,66 @@ body.player-open {
     padding-bottom: 80px; 
 }
 
+.player-right { 
+    justify-self: end; 
+    display: flex; 
+    align-items: center; 
+    gap: 1rem; 
+    min-width: 0; 
+}
+.player-status { 
+    color: #ff8a80; 
+}
+
+/* US17 volume slider: green up to the current level */
+.player-volume { 
+    display: flex; 
+    align-items: center; 
+    gap: .5rem; 
+    color: #b3b3b3; 
+}
+#volume { 
+    --level: 80%; 
+    width: 110px; 
+    height: 1rem; 
+}
+#volume::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px;
+  background: linear-gradient(to right, #1db954 var(--level), #535353 var(--level));
+}
+#volume::-moz-range-track { 
+    height: 4px; 
+    border-radius: 2px; 
+    background: #535353; 
+}
+#volume::-moz-range-progress { 
+    height: 4px; 
+    border-radius: 2px; 
+    background: #1db954; 
+}
+#volume::-webkit-slider-thumb { 
+    margin-top: -5px; 
+    width: 14px; 
+    height: 14px; 
+    background: #fff; 
+    border: 0; 
+}
+#volume::-moz-range-thumb { 
+    width: 14px; 
+    height: 14px; 
+    background: #fff; 
+    border: 0; 
+}
+
+
 @media (max-width: 575px) {
    .player-bar { 
         grid-template-columns: 1fr auto; 
     }
-    .player-status { 
+    .player-right { 
         grid-column: 1 / -1; 
         justify-self: start; 
     }
-}
+    .player-volume { 
+        display: none; } /* phones use their own volume buttons */
+    }

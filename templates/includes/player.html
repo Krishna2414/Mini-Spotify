@@ -25,5 +25,13 @@
     </button>
   </div>
 
-  <p id="player-status" class="player-status small mb-0" role="status" aria-live="polite"></p>
+  <div class="player-right">
+    <p id="player-status" class="player-status small mb-0" role="status" aria-live="polite"></p>
+    <div class="player-volume">
+      <i id="volume-icon" class="bi bi-volume-up" aria-hidden="true"></i>
+      <label for="volume" class="visually-hidden">Volume</label>
+      <input id="volume" type="range" class="form-range" min="0" max="1" step="0.01" value="0.8"
+             aria-valuetext="80%">
+    </div>
+  </div>
 </div>

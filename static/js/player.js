@@ -19,7 +19,11 @@
     prev: document.getElementById("btn-prev"),
     next: document.getElementById("btn-next"),
     status: document.getElementById("player-status"),
+    timeTotal: document.getElementById("time-total"),
+    volume: document.getElementById("volume"),
+    volumeIcon: document.getElementById("volume-icon"),
   };
+  const VOLUME_KEY = "miniSpotifyVolume";
 
   // 1. Build the queue from every play button on the page (each track once).
   const queue = [];
@@ -159,6 +163,39 @@
   audio.addEventListener("play", updateButtons);
   audio.addEventListener("pause", updateButtons);
   audio.addEventListener("ended", onEnded);  // onEnded calls next(), which updates the buttons itself
+    // US17: volume. Storage can be blocked (private mode, strict settings),
+  // so every read and write is wrapped in try/catch and the player keeps working.
+  function loadVolume() {
+    try {
+      const saved = parseFloat(localStorage.getItem(VOLUME_KEY));
+      if (saved >= 0 && saved <= 1) return saved;
+    } catch (e) { /* storage blocked: use the default */ }
+    return parseFloat(els.volume.value); // default from the HTML (0.8)
+  }
+
+  function saveVolume(value) {
+    try {
+      localStorage.setItem(VOLUME_KEY, String(value));
+    } catch (e) { /* storage blocked: volume still works, just isn't remembered */ }
+  }
+
+  function setVolume(value) {
+    audio.volume = value;
+    els.volume.value = value;
+    const pct = Math.round(value * 100);
+    els.volume.setAttribute("aria-valuetext", pct + "%");
+    els.volume.style.setProperty("--level", pct + "%");
+    els.volumeIcon.className = value === 0 ? "bi bi-volume-mute"
+      : value < 0.5 ? "bi bi-volume-down" : "bi bi-volume-up";
+  }
+
+  setVolume(loadVolume());
+
+  els.volume.addEventListener("input", function () {
+    const value = parseFloat(els.volume.value);
+    setVolume(value);   // changes straight away, while dragging
+    saveVolume(value);
+  });
   audio.addEventListener("error", function () {
     if (!audio.getAttribute("src")) return;
     showError("Sorry, this track can't be played.");
