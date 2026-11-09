@@ -271,3 +271,8 @@ class PlayerBarTests(TestCase):
     def test_player_starts_hidden(self):
         response = self.client.get(reverse("track_list"))
         self.assertContains(response, 'aria-label="Music player" hidden')
+
+    def test_volume_slider_present(self):
+        response = self.client.get(reverse("track_list"))
+        self.assertContains(response, 'id="volume" type="range"')
+        self.assertContains(response, '<label for="volume" class="visually-hidden">Volume</label>')
