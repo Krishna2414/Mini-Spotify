@@ -206,6 +206,25 @@
     setVolume(value);   // changes straight away, while dragging
     saveVolume(value);
   });
+
+  // Space toggles play/pause from anywhere on the page, except when
+  // the user is typing, or focus is on a control that Space already operates.
+  function spaceBelongsToElement(el) {
+    if (!el || el === document.body) return false;
+    if (el.isContentEditable) return true;
+    const tag = el.tagName.toLowerCase();
+    return ["input", "textarea", "select", "button", "a"].includes(tag);
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if (e.code !== "Space" && e.key !== " ") return;
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    if (current === -1) return;                  
+    if (spaceBelongsToElement(document.activeElement)) return;
+    e.preventDefault();
+    toggle();
+  });
+
   audio.addEventListener("error", function () {
     if (!audio.getAttribute("src")) return;
     showError("Sorry, this track can't be played.");

@@ -131,8 +131,22 @@ body.player-open {
     background: #fff; 
     border: 0; 
 }
+.form-check {
+    padding-left: 0;
+}
 
-/* US18: phones and small tablets (below 768px) */
+.player-bar :focus-visible,
+.play-btn:focus-visible {
+  outline: 3px solid #ffd54f !important;
+  outline-offset: 3px;
+  box-shadow: none;
+}
+.player-bar input[type="range"]:focus-visible { 
+    outline-offset: 2px; 
+    border-radius: 4px; 
+}
+
+/* phones and small tablets (below 768px) */
 @media (max-width: 767.98px) {
   .player-bar {
     grid-template-columns: 1fr auto;   /* track info | play button */
