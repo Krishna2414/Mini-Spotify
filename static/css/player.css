@@ -132,15 +132,65 @@ body.player-open {
     border: 0; 
 }
 
+/* US18: phones and small tablets (below 768px) */
+@media (max-width: 767.98px) {
+  .player-bar {
+    grid-template-columns: 1fr auto;   /* track info | play button */
+    gap: .75rem;
+    padding: .75rem 1rem;
+    padding-bottom: calc(.75rem + env(safe-area-inset-bottom)); /* iPhone home bar */
+  }
+  .player-cover { 
+    width: 48px; 
+    height: 48px; 
+}
 
-@media (max-width: 575px) {
-   .player-bar { 
-        grid-template-columns: 1fr auto; 
-    }
-    .player-right { 
-        grid-column: 1 / -1; 
-        justify-self: start; 
-    }
-    .player-volume { 
-        display: none; } /* phones use their own volume buttons */
-    }
+  /* Play button: at least 48px so it's easy to tap */
+  .player-center { 
+    width: auto; 
+  }
+  .player-play { 
+    width: 48px; 
+    height: 48px; 
+    font-size: 1.6rem; 
+   }
+
+  /* Progress bar sits along the top edge of the player, full width */
+  .player-progress { 
+    position: absolute; 
+    left: 0; 
+    right: 0; 
+    top: 0; 
+    transform: 
+    translateY(-50%); 
+    gap: 0; 
+  }
+  .player-time { 
+    display: none; 
+  }
+  #progress { 
+    height: 24px; 
+    margin: 0; 
+  }          /* tall invisible hit area for fingers */
+  #progress::-webkit-slider-runnable-track { 
+    border-radius: 0; 
+  }
+  #progress::-moz-range-track,
+  #progress::-moz-range-progress { 
+    border-radius: 0; 
+  }
+
+  /* Volume hidden: phones use their own volume buttons (iOS ignores audio.volume) */
+  .player-volume { 
+    display: none; 
+  }
+
+  /* Error message gets its own row under the track */
+  .player-right { 
+     grid-column: 1 / -1; 
+     justify-self: start; 
+  }
+  .player-right:has(.player-status:empty) { 
+    display: none; 
+  }
+}

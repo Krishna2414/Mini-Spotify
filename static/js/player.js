@@ -74,6 +74,15 @@
     });
   }
 
+  // never covers content (its height changes on phones and when an error shows).
+  function fitPageToPlayer() {
+    document.body.style.paddingBottom = els.bar.hidden ? "" : (els.bar.offsetHeight + 16) + "px";
+  }
+  if ("ResizeObserver" in window) {
+    new ResizeObserver(fitPageToPlayer).observe(els.bar);
+  }
+  window.addEventListener("resize", fitPageToPlayer);
+
   // 3. Load a track into the player bar.
   function load(index) {
     const track = queue[index];
@@ -93,6 +102,7 @@
     }
     els.bar.hidden = false;
     document.body.classList.add("player-open");
+    fitPageToPlayer();
   }
 
   function play() {
