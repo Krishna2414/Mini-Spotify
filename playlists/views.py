@@ -4,15 +4,23 @@ from django.db import IntegrityError
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
-from django.db.models import Q
+from django.db.models import Count, Q
 from tracks.models import Track
+from django.core.exceptions import PermissionDenied
+from django.conf import settings
 
 from .forms import PlaylistForm
 from .models import Playlist
 
 
-@login_required  # anonymous users are sent to LOGIN_URL ("login")
+@login_required
 def playlist_create(request):
+    if not can_create_playlist(request.user):
+        messages.warning(
+            request,
+            f"Free accounts can have {settings.FREE_PLAYLIST_LIMIT} playlists. Upgrade to Premium for unlimited.",
+        )
+        return redirect("playlist_list")
     if request.method == "POST":
         form = PlaylistForm(request.POST, owner=request.user)
         if form.is_valid():
@@ -31,19 +39,28 @@ def playlist_create(request):
     return render(request, "playlists/playlist_form.html", {"form": form})
 
 
+def can_create_playlist(user):
+    """Premium users have no limit; free users get FREE_PLAYLIST_LIMIT playlists."""
+    if user.profile.is_premium:
+        return True
+    return user.playlists.count() < settings.FREE_PLAYLIST_LIMIT
+
+
 @login_required
 def playlist_list(request):
-    # Only my playlists, each annotated with how many tracks it holds.
-    playlists = Playlist.objects.filter(owner=request.user).annotate(
-        track_count=Count("tracks")
-    )
-    return render(request, "playlists/playlist_list.html", {"playlists": playlists})
+    playlists = request.user.playlists.annotate(track_count=Count("tracks"))
+    return render(request, "playlists/playlist_list.html", {
+        "playlists": playlists,
+        "used": playlists.count(),
+        "limit": settings.FREE_PLAYLIST_LIMIT,
+        "can_create": can_create_playlist(request.user),
+    })
 
 
-@login_required
 def playlist_detail(request, pk):
-    # The page you land on after creating a playlist. Owner only (404 otherwise).
-    playlist = get_object_or_404(Playlist, pk=pk, owner=request.user)
+    playlist = get_object_or_404(Playlist, pk=pk)
+    if not playlist.can_view(request.user):
+        raise PermissionDenied
     return render(request, "playlists/playlist_detail.html", {"playlist": playlist})
 
 

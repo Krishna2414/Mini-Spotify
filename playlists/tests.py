@@ -225,3 +225,66 @@ class SearchTests(TestCase):
         response = self.client.get(reverse("home"))
         self.assertContains(response, f'action="{reverse("search")}"')
         self.assertContains(response, 'name="q"')
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class PlaylistPrivacyTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user("owner", password="pass12345!")
+        self.other = User.objects.create_user("other", password="pass12345!")
+
+    def test_new_playlists_are_private_by_default(self):
+        self.client.login(username="owner", password="pass12345!")
+        self.client.post(reverse("playlist_create"), {"name": "Chill"})
+        self.assertFalse(Playlist.objects.get(name="Chill").is_public)
+
+    def test_owner_can_make_playlist_public(self):
+        self.client.login(username="owner", password="pass12345!")
+        self.client.post(reverse("playlist_create"), {"name": "Party", "is_public": "on"})
+        self.assertTrue(Playlist.objects.get(name="Party").is_public)
+
+    def test_public_playlist_visible_to_logged_out_visitor(self):
+        p = Playlist.objects.create(owner=self.owner, name="Party", is_public=True)
+        response = self.client.get(p.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Party")
+
+    def test_public_playlist_visible_to_other_user(self):
+        p = Playlist.objects.create(owner=self.owner, name="Party", is_public=True)
+        self.client.login(username="other", password="pass12345!")
+        self.assertEqual(self.client.get(p.get_absolute_url()).status_code, 200)
+
+    def test_private_playlist_403_for_other_user(self):
+        p = Playlist.objects.create(owner=self.owner, name="Secret")
+        self.client.login(username="other", password="pass12345!")
+        response = self.client.get(p.get_absolute_url())
+        self.assertEqual(response.status_code, 403)
+        self.assertNotContains(response, "Secret", status_code=403)
+
+    def test_private_playlist_403_for_logged_out_visitor(self):
+        p = Playlist.objects.create(owner=self.owner, name="Secret")
+        self.assertEqual(self.client.get(p.get_absolute_url()).status_code, 403)
+
+    def test_owner_can_view_private_playlist(self):
+        p = Playlist.objects.create(owner=self.owner, name="Secret")
+        self.client.login(username="owner", password="pass12345!")
+        response = self.client.get(p.get_absolute_url())
+        self.assertContains(response, "Private")
+
+    def test_public_badge_in_list(self):
+        Playlist.objects.create(owner=self.owner, name="Party", is_public=True)
+        Playlist.objects.create(owner=self.owner, name="Secret")
+        self.client.login(username="owner", password="pass12345!")
+        response = self.client.get(reverse("playlist_list"))
+        self.assertContains(response, "bi-globe", count=1)
+
+    def test_visitor_cannot_edit_public_playlist(self):
+        p = Playlist.objects.create(owner=self.owner, name="Party", is_public=True)
+        self.client.login(username="other", password="pass12345!")
+        response = self.client.get(reverse("playlist_update", args=[p.pk]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_friendly_403_page(self):
+        p = Playlist.objects.create(owner=self.owner, name="Secret")
+        response = self.client.get(p.get_absolute_url())
+        self.assertContains(response, "This is private", status_code=403)

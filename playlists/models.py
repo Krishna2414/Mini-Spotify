@@ -1,35 +1,36 @@
 from django.conf import settings
 from django.db import models
-from django.db.models.functions import Lower
+from django.urls import reverse
+
+from tracks.models import Track
 
 
 class Playlist(models.Model):
-    # Owner of the playlist. Deleting the user deletes their playlists.
+    # ---- Fields (database columns) ----
+    name = models.CharField(max_length=80)
+    description = models.CharField(max_length=255, blank=True)
     owner = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="playlists",
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="playlists"
     )
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
-
-    # Many-to-many with Dev 2's Track model. Deleting a track removes it
-    # from every playlist automatically (track_confirm_delete.html promises this).
-    tracks = models.ManyToManyField("tracks.Track", blank=True, related_name="playlists")
-
+    tracks = models.ManyToManyField(Track, blank=True, related_name="playlists")
+    is_public = models.BooleanField(                                    # ← US25
+        default=False, help_text="Public playlists can be viewed by anyone."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["-created_at"]
         constraints = [
-            # Database-level rule: one user can't have two playlists with the same
-            # name, ignoring case ("Chill" == "chill"). Needs Django 4.0+ (you have 4.2).
-            models.UniqueConstraint(
-                Lower("name"), "owner", name="unique_playlist_name_per_owner_ci"
-            )
+            models.UniqueConstraint(fields=["owner", "name"], name="unique_playlist_name_per_user")
         ]
 
+    # ---- Methods ----
     def __str__(self):
-        return f"{self.name} ({self.owner})"
+        return self.name
 
-# Create your models here.
+    def get_absolute_url(self):
+        return reverse("playlist_detail", args=[self.pk])
+
+    def can_view(self, user):                                           # ← US25
+        """Anyone can see a public playlist; only the owner can see a private one."""
+        return self.is_public or self.owner == user

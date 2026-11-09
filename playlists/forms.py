@@ -6,7 +6,8 @@ from .models import Playlist
 class PlaylistForm(forms.ModelForm):
     class Meta:
         model = Playlist
-        fields = ("name", "description")  # owner is set in the view, never by the user
+        fields = ("name", "description", "is_public")
+        labels = {"is_public": "Make this playlist public"}
         widgets = {"description": forms.Textarea(attrs={"rows": 3})}
 
     def __init__(self, *args, owner=None, **kwargs):
