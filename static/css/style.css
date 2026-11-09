@@ -92,3 +92,16 @@ a:hover {
     outline: 3px solid #ffd54f !important; 
     outline-offset: 2px; 
 }
+
+/* Accessibility: Bootstrap's outline buttons are too dim on our dark background
+   (below the 4.5:1 WCAG AA contrast ratio). Lighter shades of the same colours. */
+.btn-outline-success {
+  --bs-btn-color: #3ddc84; --bs-btn-border-color: #3ddc84;
+  --bs-btn-hover-bg: #3ddc84; --bs-btn-hover-border-color: #3ddc84; --bs-btn-hover-color: #000;
+  --bs-btn-active-bg: #3ddc84; --bs-btn-active-border-color: #3ddc84; --bs-btn-active-color: #000;
+}
+.btn-outline-danger {
+  --bs-btn-color: #ff7b7b; --bs-btn-border-color: #ff7b7b;
+  --bs-btn-hover-bg: #ff7b7b; --bs-btn-hover-border-color: #ff7b7b; --bs-btn-hover-color: #000;
+  --bs-btn-active-bg: #ff7b7b; --bs-btn-active-border-color: #ff7b7b; --bs-btn-active-color: #000;
+}
